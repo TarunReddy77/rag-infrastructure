@@ -1,5 +1,6 @@
 openai_embedding_model          = "text-embedding-3-small"
-openai_chat_model               = "gpt-4.1-mini-2025-04-14"
+openai_chat_model               = "gpt-4o-mini"
+#openai_chat_model               = "gpt-4.1-mini-2025-04-14" 
 openai_embedding_model_dimensions = "768"
 pinecone_environment            = "us-east-1"
 pinecone_index_name             = "basic-rag"

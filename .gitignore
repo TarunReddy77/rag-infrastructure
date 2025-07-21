@@ -1,0 +1,7 @@
+# Ignore Terraform state files
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Ignore ONLY the secret variables file
+secrets.tfvars

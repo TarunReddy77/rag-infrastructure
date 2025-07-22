@@ -38,6 +38,8 @@ jobs:
 
       - name: Terraform Plan
         id: plan
+        env:
+          TF_LOG: DEBUG
         run: terraform plan -no-color -var-file="config.tfvars"
         # Secrets are passed via GitHub secrets, config from the file
 

@@ -36,12 +36,12 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Plan
+      - - name: Terraform Plan
         id: plan
         env:
-          TF_LOG: DEBUG
+          TF_VAR_openai_api_key: ${{ secrets.TF_VAR_OPENAI_API_KEY }}
+          TF_VAR_pinecone_api_key: ${{ secrets.TF_VAR_PINECONE_API_KEY }}
         run: terraform plan -no-color -var-file="config.tfvars"
-        # Secrets are passed via GitHub secrets, config from the file
 
       - name: Comment on PR
         uses: actions/github-script@v6
@@ -60,6 +60,29 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        # Add this 'env' block to pass your secrets
+        env:
+          TF_VAR_openai_api_key: ${{ secrets.TF_VAR_OPENAI_API_KEY }}
+          TF_VAR_pinecone_api_key: ${{ secrets.TF_VAR_PINECONE_API_KEY }}
+        run: terraform apply -auto-approve -var-file="config.tfvars"
 
     steps:
       - name: Checkout

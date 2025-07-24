@@ -1,3 +1,12 @@
+terraform {
+  backend "s3" {
+    bucket         = "rag-app-terraform-aws-state-047719620060" # To store terraform state at a centralized location
+    key            = "global/s3/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-locks" # For state locking
+  }
+}
+
 # --- 1. Provider & Networking ---
 # We keep the provider and VPC definition as they don't incur costs
 # and provide a stable foundation for the next time you apply.

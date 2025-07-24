@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket         = "rag-app-terraform-state" # To store terraform state at a centralized location
+    bucket         = "rag-app-terraform-aws-state-047719620060" # To store terraform state at a centralized location
     key            = "global/s3/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "terraform-locks" # For state locking

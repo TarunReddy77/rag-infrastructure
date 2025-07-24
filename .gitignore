@@ -5,3 +5,5 @@
 
 # Ignore ONLY the secret variables file
 secrets.tfvars
+
+.idea/

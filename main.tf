@@ -8,9 +8,13 @@ terraform {
 }
 
 # --- 1. Provider & Networking ---
+# We keep the provider and VPC definition as they don't incur costs
+# and provide a stable foundation for the next time you apply.
+
 provider "aws" {
   region = "us-east-1"
 }
+
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
@@ -315,4 +319,3 @@ resource "aws_ecs_service" "frontend" {
 output "app_url" {
   value = "http://${aws_lb.main.dns_name}"
 }
-

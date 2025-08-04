@@ -1,15 +1,16 @@
 terraform {
   backend "s3" {
-    bucket         = "rag-app-terraform-aws-state-047719620060" # To store terraform state at a centralized location
+    bucket         = "rag-app-terraform-aws-state-047719620060"
     key            = "global/s3/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "terraform-locks" # For state locking
+    dynamodb_table = "terraform-locks"
   }
 
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.56.0"
+      # Allow a newer version compatible with the state file
+      version = "~> 6.4"
     }
   }
 }
@@ -214,21 +215,14 @@ resource "aws_lb_listener_rule" "backend_api" {
 }
 
 # --- 6. ECS Task Definitions and Services ---
-resource "aws_ecs_task_definition" "backend" {
-  family                   = "rag-backend-task"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"  # 0.25 vCPU
-  memory                   = "512" # 0.5 GB
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-
-  container_definitions = jsonencode([
+locals {
+  backend_container_definitions = [
     {
       name      = "rag-backend"
       image     = "${aws_ecr_repository.backend.repository_url}:latest"
       essential = true
       portMappings = [{ containerPort = 8000, hostPort = 8000 }]
-      
+
       environment = [
         { name = "OPENAI_EMBEDDING_MODEL", valueFrom = aws_ssm_parameter.openai_embedding_model.arn },
         { name = "OPENAI_CHAT_MODEL", valueFrom = aws_ssm_parameter.openai_chat_model.arn },
@@ -237,12 +231,12 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "PINECONE_INDEX_NAME", valueFrom = aws_ssm_parameter.pinecone_index_name.arn },
         { name = "PINECONE_CLOUD_PROVIDER", valueFrom = aws_ssm_parameter.pinecone_cloud_provider.arn },
       ]
-      
+
       secrets = [
         { name = "OPENAI_API_KEY", valueFrom = aws_ssm_parameter.openai_api_key.arn },
         { name = "PINECONE_API_KEY", valueFrom = aws_ssm_parameter.pinecone_api_key.arn }
       ]
-      
+
       logConfiguration = {
         logDriver = "awslogs",
         options = {
@@ -252,9 +246,20 @@ resource "aws_ecs_task_definition" "backend" {
         }
       }
     }
-  ])
+  ]
+}
 
-  # This block explicitly defines the dependency order
+resource "aws_ecs_task_definition" "backend" {
+  family                   = "rag-backend-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+
+  # This now references the local variable, which bypasses the bug
+  container_definitions = jsonencode(local.backend_container_definitions)
+
   depends_on = [
     aws_ssm_parameter.openai_embedding_model,
     aws_ssm_parameter.openai_chat_model,

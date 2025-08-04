@@ -17,13 +17,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # --- ADD THIS DEFINITIVE DEBUGGING STEP ---
-      - name: DEBUG - List all Terraform files in repository
-        run: |
-          echo "--- Searching for all .tf, .tfvars, and .tf.json files ---"
-          find . -type f \( -name "*.tf" -o -name "*.tfvars" -o -name "*.tf.json" \)
-
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:

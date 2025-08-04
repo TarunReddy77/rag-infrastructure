@@ -246,6 +246,18 @@ resource "aws_ecs_task_definition" "backend" {
       }
     }
   ])
+
+  # This block explicitly defines the dependency order
+  depends_on = [
+    aws_ssm_parameter.openai_embedding_model,
+    aws_ssm_parameter.openai_chat_model,
+    aws_ssm_parameter.openai_embedding_model_dimensions,
+    aws_ssm_parameter.pinecone_environment,
+    aws_ssm_parameter.pinecone_index_name,
+    aws_ssm_parameter.pinecone_cloud_provider,
+    aws_ssm_parameter.openai_api_key,
+    aws_ssm_parameter.pinecone_api_key
+  ]
 }
 resource "aws_ecs_task_definition" "frontend" {
   family                   = "rag-frontend-task"

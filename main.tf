@@ -316,3 +316,8 @@ output "app_url" {
   value = "http://${aws_lb.main.dns_name}"
 }
 
+# --- for debugging ---
+output "debug_container_definition" {
+  description = "Shows the exact JSON being generated for the container definition."
+  value       = aws_ecs_task_definition.backend.container_definitions
+}

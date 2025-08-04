@@ -17,13 +17,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-# --- ADD THIS NEW DEBUGGING STEP HERE ---
-      - name: DEBUG - Display main.tf Content
-        run: |
-          echo "--- Start of main.tf content ---"
-          cat main.tf
-          echo "--- End of main.tf content ---"
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -32,6 +25,8 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.5"
 
       - name: Terraform Init
         run: terraform init

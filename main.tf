@@ -5,6 +5,13 @@ terraform {
     region         = "us-east-1"
     dynamodb_table = "terraform-locks" # For state locking
   }
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.56.0"
+    }
+  }
 }
 
 # --- 1. Provider & Networking ---

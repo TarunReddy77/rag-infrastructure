@@ -215,7 +215,7 @@ resource "aws_lb_listener_rule" "backend_api" {
 }
 
 # --- 6. ECS Task Definitions and Services ---
-gresource "aws_ecs_task_definition" "backend" {
+resource "aws_ecs_task_definition" "backend" {
   family                   = "rag-backend-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]

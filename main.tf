@@ -328,8 +328,21 @@ output "app_url" {
   value = "http://${aws_lb.main.dns_name}"
 }
 
-# --- for debugging ---
-output "debug_container_definition" {
-  description = "Shows the exact JSON being generated for the container definition."
-  value       = aws_ecs_task_definition.backend.container_definitions
+# --- Replace the old debug output with this new one ---
+output "debug_ssm_parameter_arns" {
+  description = "Check the values of the SSM Parameter ARNs directly."
+  value = {
+    # These are the variables for the 'environment' block that is failing
+    embedding_model_arn = aws_ssm_parameter.openai_embedding_model.arn
+    chat_model_arn      = aws_ssm_parameter.openai_chat_model.arn
+    dimensions_arn      = aws_ssm_parameter.openai_embedding_model_dimensions.arn
+    pinecone_env_arn    = aws_ssm_parameter.pinecone_environment.arn
+    pinecone_index_arn  = aws_ssm_parameter.pinecone_index_name.arn
+    pinecone_cloud_arn  = aws_ssm_parameter.pinecone_cloud_provider.arn
+
+    # These are for the 'secrets' block that is working, for comparison
+    openai_secret_arn   = aws_ssm_parameter.openai_api_key.arn
+    pinecone_secret_arn = aws_ssm_parameter.pinecone_api_key.arn
+  }
+  sensitive = true # Marking as sensitive to be safe
 }

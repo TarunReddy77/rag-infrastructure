@@ -252,7 +252,7 @@ resource "aws_ecs_task_definition" "frontend" {
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256" # 0.25 vCPU
-  memory                   = "1024" # 0.5 GB
+  memory                   = "512" # 0.5 GB
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
   container_definitions = jsonencode([

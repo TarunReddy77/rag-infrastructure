@@ -328,7 +328,7 @@ output "app_url" {
   value = "http://${aws_lb.main.dns_name}"
 }
 
-# --- Replace the old debug output with this new one ---
+# This is the corrected debug output with 'sensitive' removed
 output "debug_ssm_parameter_arns" {
   description = "Check the values of the SSM Parameter ARNs directly."
   value = {
@@ -344,5 +344,4 @@ output "debug_ssm_parameter_arns" {
     openai_secret_arn   = aws_ssm_parameter.openai_api_key.arn
     pinecone_secret_arn = aws_ssm_parameter.pinecone_api_key.arn
   }
-  sensitive = true # Marking as sensitive to be safe
 }

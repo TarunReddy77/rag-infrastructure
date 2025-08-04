@@ -35,4 +35,4 @@ jobs:
         env:
           TF_VAR_openai_api_key: ${{ secrets.TF_VAR_OPENAI_API_KEY }}
           TF_VAR_pinecone_api_key: ${{ secrets.TF_VAR_PINECONE_API_KEY }}
-        run: terraform apply -auto-approve -var-file="config.tfvars"
+        run: terraform apply -auto-approve

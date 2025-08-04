@@ -9,7 +9,6 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      # Allow a newer version compatible with the state file
       version = "~> 6.4"
     }
   }
@@ -127,7 +126,7 @@ resource "aws_iam_role_policy_attachment" "ecs_ssm_policy_attachment" {
   policy_arn = aws_iam_policy.ssm_policy.arn
 }
 
-# --- 4. SSM Parameter Store ---
+# --- 4. SSM Parameter Store (Secrets Only) ---
 resource "aws_ssm_parameter" "openai_api_key" {
   name  = "/rag-app/secrets/openai_api_key"
   type  = "SecureString"
@@ -137,36 +136,6 @@ resource "aws_ssm_parameter" "pinecone_api_key" {
   name  = "/rag-app/secrets/pinecone_api_key"
   type  = "SecureString"
   value = var.pinecone_api_key
-}
-resource "aws_ssm_parameter" "openai_embedding_model" {
-  name  = "/rag-app/config/openai_embedding_model"
-  type  = "String"
-  value = var.openai_embedding_model
-}
-resource "aws_ssm_parameter" "openai_chat_model" {
-  name  = "/rag-app/config/openai_chat_model"
-  type  = "String"
-  value = var.openai_chat_model
-}
-resource "aws_ssm_parameter" "openai_embedding_model_dimensions" {
-  name  = "/rag-app/config/openai_embedding_model_dimensions"
-  type  = "String"
-  value = var.openai_embedding_model_dimensions
-}
-resource "aws_ssm_parameter" "pinecone_environment" {
-  name  = "/rag-app/config/pinecone_environment"
-  type  = "String"
-  value = var.pinecone_environment
-}
-resource "aws_ssm_parameter" "pinecone_index_name" {
-  name  = "/rag-app/config/pinecone_index_name"
-  type  = "String"
-  value = var.pinecone_index_name
-}
-resource "aws_ssm_parameter" "pinecone_cloud_provider" {
-  name  = "/rag-app/config/pinecone_cloud_provider"
-  type  = "String"
-  value = var.pinecone_cloud_provider
 }
 
 # --- 5. ALB, Target Groups, and Listeners ---
@@ -223,20 +192,30 @@ resource "aws_ecs_task_definition" "backend" {
   memory                   = "512"
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
-  # This function reads the template file and safely injects the values
-  container_definitions = templatefile("${path.module}/container_definition.json.tftpl", {
-    image_url             = "${aws_ecr_repository.backend.repository_url}:latest"
-    aws_region            = "us-east-1"
-    log_group_name        = aws_cloudwatch_log_group.backend_logs.name
-    embedding_model_arn   = aws_ssm_parameter.openai_embedding_model.arn
-    chat_model_arn        = aws_ssm_parameter.openai_chat_model.arn
-    dimensions_arn        = aws_ssm_parameter.openai_embedding_model_dimensions.arn
-    pinecone_env_arn      = aws_ssm_parameter.pinecone_environment.arn
-    pinecone_index_arn    = aws_ssm_parameter.pinecone_index_name.arn
-    pinecone_cloud_arn    = aws_ssm_parameter.pinecone_cloud_provider.arn
-    openai_secret_arn     = aws_ssm_parameter.openai_api_key.arn
-    pinecone_secret_arn   = aws_ssm_parameter.pinecone_api_key.arn
-  })
+  container_definitions = jsonencode([
+    {
+      name      = "rag-backend"
+      image     = "${aws_ecr_repository.backend.repository_url}:latest"
+      essential = true
+      portMappings = [{ containerPort = 8000, hostPort = 8000 }]
+
+      # The 'environment' block is intentionally removed as the app now has defaults.
+
+      secrets = [
+        { name = "OPENAI_API_KEY", valueFrom = aws_ssm_parameter.openai_api_key.arn },
+        { name = "PINECONE_API_KEY", valueFrom = aws_ssm_parameter.pinecone_api_key.arn }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.backend_logs.name,
+          "awslogs-region"        = "us-east-1",
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+  ])
 }
 resource "aws_ecs_task_definition" "frontend" {
   family                   = "rag-frontend-task"
@@ -305,22 +284,4 @@ resource "aws_ecs_service" "frontend" {
 # --- 7. Outputs ---
 output "app_url" {
   value = "http://${aws_lb.main.dns_name}"
-}
-
-# This is the corrected debug output with 'sensitive' removed
-output "debug_ssm_parameter_arns" {
-  description = "Check the values of the SSM Parameter ARNs directly."
-  value = {
-    # These are the variables for the 'environment' block that is failing
-    embedding_model_arn = aws_ssm_parameter.openai_embedding_model.arn
-    chat_model_arn      = aws_ssm_parameter.openai_chat_model.arn
-    dimensions_arn      = aws_ssm_parameter.openai_embedding_model_dimensions.arn
-    pinecone_env_arn    = aws_ssm_parameter.pinecone_environment.arn
-    pinecone_index_arn  = aws_ssm_parameter.pinecone_index_name.arn
-    pinecone_cloud_arn  = aws_ssm_parameter.pinecone_cloud_provider.arn
-
-    # These are for the 'secrets' block that is working, for comparison
-    openai_secret_arn   = aws_ssm_parameter.openai_api_key.arn
-    pinecone_secret_arn = aws_ssm_parameter.pinecone_api_key.arn
-  }
 }

@@ -215,41 +215,7 @@ resource "aws_lb_listener_rule" "backend_api" {
 }
 
 # --- 6. ECS Task Definitions and Services ---
-locals {
-  backend_container_definitions = [
-    {
-      name      = "rag-backend"
-      image     = "${aws_ecr_repository.backend.repository_url}:latest"
-      essential = true
-      portMappings = [{ containerPort = 8000, hostPort = 8000 }]
-
-      environment = [
-        { name = "OPENAI_EMBEDDING_MODEL", valueFrom = aws_ssm_parameter.openai_embedding_model.arn },
-        { name = "OPENAI_CHAT_MODEL", valueFrom = aws_ssm_parameter.openai_chat_model.arn },
-        { name = "OPENAI_EMBEDDING_MODEL_DIMENSIONS", valueFrom = aws_ssm_parameter.openai_embedding_model_dimensions.arn },
-        { name = "PINECONE_ENVIRONMENT", valueFrom = aws_ssm_parameter.pinecone_environment.arn },
-        { name = "PINECONE_INDEX_NAME", valueFrom = aws_ssm_parameter.pinecone_index_name.arn },
-        { name = "PINECONE_CLOUD_PROVIDER", valueFrom = aws_ssm_parameter.pinecone_cloud_provider.arn },
-      ]
-
-      secrets = [
-        { name = "OPENAI_API_KEY", valueFrom = aws_ssm_parameter.openai_api_key.arn },
-        { name = "PINECONE_API_KEY", valueFrom = aws_ssm_parameter.pinecone_api_key.arn }
-      ]
-
-      logConfiguration = {
-        logDriver = "awslogs",
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.backend_logs.name,
-          "awslogs-region"        = "us-east-1",
-          "awslogs-stream-prefix" = "ecs"
-        }
-      }
-    }
-  ]
-}
-
-resource "aws_ecs_task_definition" "backend" {
+gresource "aws_ecs_task_definition" "backend" {
   family                   = "rag-backend-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
@@ -257,19 +223,20 @@ resource "aws_ecs_task_definition" "backend" {
   memory                   = "512"
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
-  # This now references the local variable, which bypasses the bug
-  container_definitions = jsonencode(local.backend_container_definitions)
-
-  depends_on = [
-    aws_ssm_parameter.openai_embedding_model,
-    aws_ssm_parameter.openai_chat_model,
-    aws_ssm_parameter.openai_embedding_model_dimensions,
-    aws_ssm_parameter.pinecone_environment,
-    aws_ssm_parameter.pinecone_index_name,
-    aws_ssm_parameter.pinecone_cloud_provider,
-    aws_ssm_parameter.openai_api_key,
-    aws_ssm_parameter.pinecone_api_key
-  ]
+  # This function reads the template file and safely injects the values
+  container_definitions = templatefile("${path.module}/container_definition.json.tftpl", {
+    image_url             = "${aws_ecr_repository.backend.repository_url}:latest"
+    aws_region            = "us-east-1"
+    log_group_name        = aws_cloudwatch_log_group.backend_logs.name
+    embedding_model_arn   = aws_ssm_parameter.openai_embedding_model.arn
+    chat_model_arn        = aws_ssm_parameter.openai_chat_model.arn
+    dimensions_arn        = aws_ssm_parameter.openai_embedding_model_dimensions.arn
+    pinecone_env_arn      = aws_ssm_parameter.pinecone_environment.arn
+    pinecone_index_arn    = aws_ssm_parameter.pinecone_index_name.arn
+    pinecone_cloud_arn    = aws_ssm_parameter.pinecone_cloud_provider.arn
+    openai_secret_arn     = aws_ssm_parameter.openai_api_key.arn
+    pinecone_secret_arn   = aws_ssm_parameter.pinecone_api_key.arn
+  })
 }
 resource "aws_ecs_task_definition" "frontend" {
   family                   = "rag-frontend-task"

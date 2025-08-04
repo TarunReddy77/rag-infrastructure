@@ -1,0 +1,57 @@
+[
+  {
+    "name": "rag-backend",
+    "image": "${image_url}",
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 8000,
+        "hostPort": 8000
+      }
+    ],
+    "environment": [
+      {
+        "name": "OPENAI_EMBEDDING_MODEL",
+        "valueFrom": "${embedding_model_arn}"
+      },
+      {
+        "name": "OPENAI_CHAT_MODEL",
+        "valueFrom": "${chat_model_arn}"
+      },
+      {
+        "name": "OPENAI_EMBEDDING_MODEL_DIMENSIONS",
+        "valueFrom": "${dimensions_arn}"
+      },
+      {
+        "name": "PINECONE_ENVIRONMENT",
+        "valueFrom": "${pinecone_env_arn}"
+      },
+      {
+        "name": "PINECONE_INDEX_NAME",
+        "valueFrom": "${pinecone_index_arn}"
+      },
+      {
+        "name": "PINECONE_CLOUD_PROVIDER",
+        "valueFrom": "${pinecone_cloud_arn}"
+      }
+    ],
+    "secrets": [
+      {
+        "name": "OPENAI_API_KEY",
+        "valueFrom": "${openai_secret_arn}"
+      },
+      {
+        "name": "PINECONE_API_KEY",
+        "valueFrom": "${pinecone_secret_arn}"
+      }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${log_group_name}",
+        "awslogs-region": "${aws_region}",
+        "awslogs-stream-prefix": "ecs"
+      }
+    }
+  }
+]
